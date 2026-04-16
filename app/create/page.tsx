@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import LayoutShell from '@/components/LayoutShell';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Calendar, Clock, Bell, Save, X, Loader2, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/use-auth';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { ptBR } from 'date-fns/locale/pt-BR';
+import { parse, format } from 'date-fns';
+
+registerLocale('pt-BR', ptBR);
 
 export default function CreateReminder() {
   const router = useRouter();
@@ -17,16 +21,26 @@ export default function CreateReminder() {
   const [success, setSuccess] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [customAlert, setCustomAlert] = useState('');
+  const [mounted, setMounted] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    date: '',
+    time: '',
     alert_time: '15 MIN ANTES',
     description: '',
   });
 
   useEffect(() => {
+    setMounted(true);
+    
+    // Set initial date/time only on client to avoid hydration mismatch
+    setFormData(prev => ({
+      ...prev,
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(/[^0-9:]/g, ''),
+    }));
+
     const params = new URLSearchParams(window.location.search);
     const titleParam = params.get('title');
     const idParam = params.get('id');
@@ -118,8 +132,18 @@ export default function CreateReminder() {
       setLoading(false);
     }
   };
+  const safeParseDate = (dateStr: string, formatStr: string) => {
+    try {
+      if (!dateStr) return null;
+      const parsed = parse(dateStr, formatStr, new Date());
+      return isNaN(parsed.getTime()) ? null : parsed;
+    } catch (e) {
+      return null;
+    }
+  };
+
   return (
-    <LayoutShell>
+    <>
       <AnimatePresence>
         {!user && (
           <motion.div 
@@ -179,7 +203,7 @@ export default function CreateReminder() {
 
       {/* Editorial Header Section */}
       <section className="mb-12">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-4">
           <Link href="/" className="w-10 h-10 flex items-center justify-center rounded-full transition-colors hover:bg-primary/5 text-primary">
             <ArrowLeft size={24} />
           </Link>
@@ -224,13 +248,18 @@ export default function CreateReminder() {
               Data de Ocorrência
             </label>
             <div className="relative flex items-center">
-              <Calendar size={20} className="absolute left-4 text-outline" />
-              <input
-                className="w-full pl-12 pr-6 py-4 bg-surface-container-low border-none rounded-2xl text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              />
+              <Calendar size={20} className="absolute left-4 text-outline z-10 pointer-events-none" />
+              {mounted && (
+                <DatePicker
+                  selected={safeParseDate(formData.date, 'yyyy-MM-dd')}
+                  onChange={(date) => setFormData({ ...formData, date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                  dateFormat="dd/MM/yyyy"
+                  locale="pt-BR"
+                  withPortal
+                  className="w-full pl-12 pr-6 py-4 bg-surface-container-low border-none rounded-2xl text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all"
+                  placeholderText="Selecione a data"
+                />
+              )}
             </div>
           </div>
           {/* Time */}
@@ -239,13 +268,22 @@ export default function CreateReminder() {
               Hora do Evento
             </label>
             <div className="relative flex items-center">
-              <Clock size={20} className="absolute left-4 text-outline" />
-              <input
-                className="w-full pl-12 pr-6 py-4 bg-surface-container-low border-none rounded-2xl text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all"
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              />
+              <Clock size={20} className="absolute left-4 text-outline z-10 pointer-events-none" />
+              {mounted && (
+                <DatePicker
+                  selected={safeParseDate(formData.time, 'HH:mm')}
+                  onChange={(date) => setFormData({ ...formData, time: date ? format(date, 'HH:mm') : '' })}
+                  showTimeSelect
+                  showTimeSelectOnly
+                  timeIntervals={5}
+                  timeCaption="Hora"
+                  dateFormat="HH:mm"
+                  locale="pt-BR"
+                  withPortal
+                  className="w-full pl-12 pr-6 py-4 bg-surface-container-low border-none rounded-2xl text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all"
+                  placeholderText="Selecione a hora"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -338,6 +376,6 @@ export default function CreateReminder() {
           </button>
         </div>
       )}
-    </LayoutShell>
+    </>
   );
 }

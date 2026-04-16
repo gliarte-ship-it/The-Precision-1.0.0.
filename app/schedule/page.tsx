@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import LayoutShell from '@/components/LayoutShell';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, MoreVertical, Lock, BarChart3, Clock, Loader2, Trash2, CheckCircle, Edit } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -144,7 +143,7 @@ export default function Schedule() {
   };
 
   return (
-    <LayoutShell>
+    <>
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -343,6 +342,6 @@ export default function Schedule() {
           </div>
         </div>
       </section>
-    </LayoutShell>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import LayoutShell from '@/components/LayoutShell';
 import { motion, AnimatePresence } from 'motion/react';
 import { FileText, Download, Clock, History, Calendar, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -125,7 +124,7 @@ export default function HistoryPage() {
   const currentReminders = activeTab === 'past' ? pastReminders : futureReminders;
 
   return (
-    <LayoutShell>
+    <>
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -236,6 +235,6 @@ export default function HistoryPage() {
           )}
         </div>
       </section>
-    </LayoutShell>
+    </>
   );
 }

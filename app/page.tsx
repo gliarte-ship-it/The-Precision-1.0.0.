@@ -48,40 +48,50 @@ export default function Dashboard() {
       </header>
 
       {/* Progress Card */}
-      <div className="glass p-8 rounded-[2rem] editorial-shadow border border-white/20 relative overflow-hidden">
-        <div className="relative z-10">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-primary/60 mb-2">Progresso Diário</h2>
-          <div className="flex items-end gap-2 mb-4">
-            <span className="text-5xl font-black tracking-tighter text-primary">{Math.round(dailyProgress)}%</span>
-            <span className="text-slate-400 font-bold mb-1">concluído</span>
+      <div className="glass p-10 rounded-[3rem] editorial-shadow border border-white/20 relative overflow-hidden bg-gradient-to-br from-white/80 to-primary/5">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="space-y-2">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40">Cronometria Diária</h2>
+            <div className="flex items-baseline gap-2">
+              <span className="text-7xl font-black tracking-tighter text-primary leading-none">
+                {Math.round(dailyProgress)}%
+              </span>
+              <span className="text-slate-400 font-bold text-sm uppercase tracking-widest">Sincronizado</span>
+            </div>
           </div>
-          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${dailyProgress}%` }}
-              className="h-full bg-primary"
-              transition={{ duration: 1.5, ease: "circOut" }}
-            />
+          
+          <div className="flex-1 max-w-xs w-full space-y-4">
+            <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <span>Eficiência</span>
+              <span>{Math.round(dailyProgress)}/100</span>
+            </div>
+            <div className="w-full h-4 bg-slate-100/50 rounded-full overflow-hidden p-1 border border-white">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${dailyProgress}%` }}
+                className="h-full bg-primary rounded-full shadow-[0_0_15px_rgba(0,71,141,0.3)]"
+                transition={{ duration: 1.5, ease: "circOut" }}
+              />
+            </div>
           </div>
         </div>
-        <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-0" />
+        
+        {/* Decorative elements */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/10 rounded-full blur-3xl" />
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link href="/create" className="glass p-6 rounded-3xl editorial-shadow border border-white/20 hover:scale-[1.02] transition-transform group">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
-            <Clock size={24} />
+      <div className="grid grid-cols-1 gap-4">
+        <Link href="/create" className="glass p-8 rounded-[2.5rem] editorial-shadow border border-white/20 hover:scale-[1.01] transition-transform group flex items-center gap-6">
+          <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+            <Clock size={32} />
           </div>
-          <h3 className="font-bold text-lg">Novo Lembrete</h3>
-          <p className="text-xs text-slate-400 mt-1">Agende sua próxima tarefa</p>
-        </Link>
-        <Link href="/schedule" className="glass p-6 rounded-3xl editorial-shadow border border-white/20 hover:scale-[1.02] transition-transform group">
-          <div className="w-12 h-12 rounded-2xl bg-secondary-container/30 flex items-center justify-center text-secondary mb-4 group-hover:bg-secondary group-hover:text-white transition-colors">
-            <CheckCircle2 size={24} />
+          <div>
+            <h3 className="font-black text-2xl tracking-tight">Novo Lembrete</h3>
+            <p className="text-sm text-slate-400 font-medium">Agende sua próxima tarefa com precisão</p>
           </div>
-          <h3 className="font-bold text-lg">Calendário</h3>
-          <p className="text-xs text-slate-400 mt-1">Visualize sua semana</p>
+          <ArrowRight className="ml-auto text-primary/30 group-hover:text-primary transition-colors" size={24} />
         </Link>
       </div>
 

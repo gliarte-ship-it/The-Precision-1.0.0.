@@ -56,20 +56,23 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center py-12">
+    <div className="pb-12">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md space-y-8"
+        className="w-full max-w-md mx-auto"
       >
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black tracking-tighter text-primary">
+        <section className="mb-12 text-center">
+          <div className="flex flex-col items-center mb-4">
+            <span className="font-bold text-primary tracking-[0.1em] uppercase text-[10px]">Portal Chronos</span>
+          </div>
+          <h1 className="font-bold text-4xl tracking-tight text-on-surface leading-none mb-4 whitespace-nowrap">
             {isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}
           </h1>
-          <p className="text-slate-500 font-medium">
+          <p className="text-on-surface-variant text-lg leading-relaxed opacity-80 max-w-[30ch] mx-auto">
             {isLogin ? 'Sincronize sua cronografia pessoal.' : 'Comece sua jornada de precisão hoje.'}
           </p>
-        </div>
+        </section>
 
         <div className="bg-white p-8 rounded-[2.5rem] editorial-shadow border border-slate-100 space-y-6">
           <AnimatePresence mode="wait">
@@ -159,13 +162,19 @@ export default function AuthPage() {
             </button>
           </form>
 
-          <div className="text-center pt-4">
+          <div className="text-center pt-4 space-y-3">
             <button 
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm font-bold text-primary hover:underline"
+              className="text-sm font-bold text-primary hover:underline block w-full"
             >
               {isLogin ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entre agora'}
             </button>
+            <Link 
+              href="/credits"
+              className="inline-block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-primary transition-colors"
+            >
+              Créditos
+            </Link>
           </div>
         </div>
       </motion.div>

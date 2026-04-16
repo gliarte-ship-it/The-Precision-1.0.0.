@@ -3,10 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, PlusCircle, CalendarDays, AlarmClock, Bell } from 'lucide-react';
-import { motion } from 'motion/react';
+import { LayoutDashboard, PlusCircle, CalendarDays, AlarmClock, Bell, Timer, User as UserIcon, Share2, DownloadCloud } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 import AlertOverlay from '@/components/AlertOverlay';
+import { useState, useEffect } from 'react';
 
 interface LayoutShellProps {
   children: React.ReactNode;
@@ -21,6 +22,33 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   const pathname = usePathname();
   const { user, login, logout } = useAuth();
   const { dailyProgress } = useReminders();
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      // Fallback for browsers that don't support beforeinstallprompt or already installed
+      alert('Para instalar, use a opção "Adicionar à tela de início" no menu do seu navegador.');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const navItems = [
     { name: 'Início', icon: LayoutDashboard, href: '/' },
@@ -35,22 +63,41 @@ export default function LayoutShell({ children }: LayoutShellProps) {
       {/* Top Bar */}
       <header className="fixed top-0 left-0 w-full z-50 glass editorial-shadow px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-secondary-container flex items-center justify-center relative">
-            {user ? (
+          <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center relative border border-primary/20">
+            <Timer className="text-primary" size={24} />
+          </div>
+          <span className="font-black tracking-tighter text-primary text-xl">The Precision</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {user && (
+            <>
+              <Link 
+                href="/share"
+                className="p-2 rounded-full hover:bg-primary/5 transition-colors text-primary"
+                title="Compartilhar Agenda"
+              >
+                <Share2 size={20} />
+              </Link>
+              <button 
+                onClick={handleInstallClick}
+                className="p-2 rounded-full hover:bg-primary/5 transition-colors text-primary"
+                title="Instalar App"
+              >
+                <DownloadCloud size={20} />
+              </button>
+            </>
+          )}
+          {user && (
+            <Link href="/profile" className="w-8 h-8 rounded-full overflow-hidden border border-primary/10 relative hover:ring-2 hover:ring-primary/20 transition-all">
               <Image
-                src={user.user_metadata?.avatar_url || "https://picsum.photos/seed/professional/100/100"}
+                src={user.user_metadata?.avatar_url || `https://picsum.photos/seed/${user.id}/100/100`}
                 alt="User Profile"
                 fill
                 className="object-cover"
                 referrerPolicy="no-referrer"
               />
-            ) : (
-              <LayoutDashboard className="text-primary" />
-            )}
-          </div>
-          <span className="font-black tracking-tighter text-primary text-xl">The Precision</span>
-        </div>
-        <div className="flex items-center gap-2">
+            </Link>
+          )}
           {user ? (
             <button 
               onClick={() => logout()}

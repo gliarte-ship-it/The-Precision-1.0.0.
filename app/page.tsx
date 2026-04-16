@@ -8,8 +8,8 @@ import { Clock, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Dashboard() {
-  const { user, login } = useAuth();
-  const { dailyProgress } = useReminders();
+  const { user } = useAuth();
+  const { reminders } = useReminders();
 
   if (!user) {
     return (
@@ -46,40 +46,6 @@ export default function Dashboard() {
         </h1>
         <p className="text-slate-500 font-medium">Sua jornada cronográfica de hoje.</p>
       </header>
-
-      {/* Progress Card */}
-      <div className="glass p-10 rounded-[3rem] editorial-shadow border border-white/20 relative overflow-hidden bg-gradient-to-br from-white/80 to-primary/5">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-          <div className="space-y-2">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40">Cronometria Diária</h2>
-            <div className="flex items-baseline gap-2">
-              <span className="text-7xl font-black tracking-tighter text-primary leading-none">
-                {Math.round(dailyProgress)}%
-              </span>
-              <span className="text-slate-400 font-bold text-sm uppercase tracking-widest">Sincronizado</span>
-            </div>
-          </div>
-          
-          <div className="flex-1 max-w-xs w-full space-y-4">
-            <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              <span>Eficiência</span>
-              <span>{Math.round(dailyProgress)}/100</span>
-            </div>
-            <div className="w-full h-4 bg-slate-100/50 rounded-full overflow-hidden p-1 border border-white">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${dailyProgress}%` }}
-                className="h-full bg-primary rounded-full shadow-[0_0_15px_rgba(0,71,141,0.3)]"
-                transition={{ duration: 1.5, ease: "circOut" }}
-              />
-            </div>
-          </div>
-        </div>
-        
-        {/* Decorative elements */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/10 rounded-full blur-3xl" />
-      </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 gap-4">

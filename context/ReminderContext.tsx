@@ -18,7 +18,6 @@ interface Reminder {
 interface ReminderContextType {
   activeAlert: Reminder | null;
   dismissAlert: () => void;
-  dailyProgress: number;
 }
 
 const ReminderContext = createContext<ReminderContextType | undefined>(undefined);
@@ -26,7 +25,6 @@ const ReminderContext = createContext<ReminderContextType | undefined>(undefined
 export function ReminderProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [dailyProgress, setDailyProgress] = useState(0);
   const [activeAlert, setActiveAlert] = useState<Reminder | null>(null);
   const [triggeredAlerts, setTriggeredAlerts] = useState<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -48,7 +46,6 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) {
       setReminders([]);
-      setDailyProgress(0);
       return;
     }
 
@@ -64,7 +61,6 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
       
       if (!error && data) {
         setReminders(data as Reminder[]);
-        updateProgress(data as Reminder[]);
       }
     };
 
@@ -88,12 +84,6 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
       supabase.removeChannel(channel);
     };
   }, [user]);
-
-  const updateProgress = (data: Reminder[]) => {
-    const total = data.length;
-    const completed = data.filter(r => r.completed).length;
-    setDailyProgress(total > 0 ? (completed / total) * 100 : 0);
-  };
 
   const parseAlertTime = (alertStr: string): number => {
     if (!alertStr) return 0;
@@ -148,7 +138,7 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ReminderContext.Provider value={{ activeAlert, dismissAlert, dailyProgress }}>
+    <ReminderContext.Provider value={{ activeAlert, dismissAlert }}>
       {children}
     </ReminderContext.Provider>
   );

@@ -20,8 +20,7 @@ import { useReminders } from '@/context/ReminderContext';
 
 export default function LayoutShell({ children }: LayoutShellProps) {
   const pathname = usePathname();
-  const { user, login, logout } = useAuth();
-  const { dailyProgress } = useReminders();
+  const { user, logout } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -117,16 +116,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
           )}
         </div>
         
-        {/* Chronographic Sync Progress Bar */}
-        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-outline-variant/20">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${dailyProgress}%` }}
-            className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
-            transition={{ duration: 1, ease: "easeOut" }}
-          />
-        </div>
-      </header>
+        </header>
 
       {/* Main Content */}
       <main className="flex-1 pt-24 pb-32 px-6 max-w-2xl mx-auto w-full">

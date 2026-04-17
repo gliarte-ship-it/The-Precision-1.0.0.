@@ -21,17 +21,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Auth session error:', error);
-        // If the refresh token is invalid, we should sign out to clear local storage
-        if (error.message.includes('Refresh Token Not Found') || error.message.includes('invalid_refresh_token')) {
-          supabase.auth.signOut();
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Auth session error:', error.message || error);
+          // If the refresh token is invalid, we must clear the session to avoid being stuck
+          if (error.message.includes('Refresh Token Not Found') || error.message.includes('invalid_refresh_token')) {
+            await supabase.auth.signOut();
+            // Force clear local storage keys related to supabase auth as a safety measure
+            Object.keys(localStorage).forEach(key => {
+              if (key.includes('sb-') && key.includes('-auth-token')) {
+                localStorage.removeItem(key);
+              }
+            });
+            setUser(null);
+          }
+        } else {
+          setUser(session?.user ?? null);
         }
+      } catch (err: any) {
+        console.error('Unexpected auth error:', err.message || err);
+      } finally {
+        setLoading(false);
       }
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -64,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login error:', error.message || error);
       // Removed alert as per instructions
     }
   };
@@ -78,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       return { error: null };
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login error:', error.message || error);
       return { error };
     }
   };
@@ -97,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       return { error: null };
     } catch (error: any) {
-      console.error('Signup error:', error);
+      console.error('Signup error:', error.message || error);
       return { error };
     }
   };
@@ -106,8 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch (error: any) {
+      console.error('Logout error:', error.message || error);
     }
   };
 

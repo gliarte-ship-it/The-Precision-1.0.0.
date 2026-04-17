@@ -21,12 +21,14 @@ import { useReminders } from '@/context/ReminderContext';
 export default function LayoutShell({ children }: LayoutShellProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [canInstall, setCanInstall] = useState(false);
+  const deferredPrompt = React.useRef<any>(null);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      deferredPrompt.current = e;
+      setCanInstall(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -37,15 +39,16 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
+    if (!deferredPrompt.current) {
       // Fallback for browsers that don't support beforeinstallprompt or already installed
       alert('Para instalar, use a opção "Adicionar à tela de início" no menu do seu navegador.');
       return;
     }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt.current.prompt();
+    const { outcome } = await deferredPrompt.current.userChoice;
     if (outcome === 'accepted') {
-      setDeferredPrompt(null);
+      deferredPrompt.current = null;
+      setCanInstall(false);
     }
   };
 

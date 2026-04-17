@@ -2,19 +2,46 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, Download, Clock, History, Calendar, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Download, Clock, History, Calendar, Loader2, CheckCircle, AlertCircle, Filter, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2 } from 'lucide-react';
+import { Trash2, DownloadCloud } from 'lucide-react';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+import { useRouter } from 'next/navigation';
 
 export default function HistoryPage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [reminders, setReminders] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth?message=login_required');
+    }
+  }, [user, authLoading, router]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'past' | 'future'>('future');
+  const [activeTab, setActiveTab] = useState<'past' | 'future' | 'custom'>('future');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+        setErrorMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, errorMessage]);
 
   useEffect(() => {
     if (!user) {
@@ -69,10 +96,14 @@ export default function HistoryPage() {
         .delete()
         .eq('id', deleteId);
       if (error) throw error;
-    } catch (error) {
-      console.error('Erro ao excluir lembrete:', error);
+      setReminders(prev => prev.filter(r => r.id !== deleteId));
+      setSuccessMessage('Exclusão executada com sucesso.');
+    } catch (error: any) {
+      console.error('Erro ao excluir lembrete:', error.message || error);
+      setErrorMessage(error.message || 'Erro ao excluir lembrete.');
     } finally {
       setDeleteId(null);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -87,41 +118,81 @@ export default function HistoryPage() {
 
   const pastReminders = reminders.filter(r => isPast(r));
   const futureReminders = reminders.filter(r => !isPast(r));
+  const customReminders = reminders.filter(r => {
+    if (!startDate || !endDate) return false;
+    return r.date >= startDate && r.date <= endDate;
+  });
 
-  const exportToPDF = (type: 'past' | 'future') => {
-    /*
-    const doc = new jsPDF();
-    const data = type === 'past' ? pastReminders : futureReminders;
-    const title = type === 'past' ? 'Histórico de Lembretes Passados' : 'Agenda de Lembretes Futuros';
+  const exportToPDF = (type: 'past' | 'future' | 'custom') => {
+    try {
+      const doc = new jsPDF();
+      let data = [];
+      let title = '';
 
-    doc.setFontSize(18);
-    doc.text(title, 14, 22);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30);
+      if (type === 'past') {
+        data = pastReminders;
+        title = 'HISTORICO DE LEMBRETES PASSADOS';
+      } else if (type === 'future') {
+        data = futureReminders;
+        title = 'AGENDA DE LEMBRETES FUTUROS';
+      } else {
+        data = customReminders;
+        title = `RELATORIO DE LEMBRETES (${startDate.split('-').reverse().join('/')} - ${endDate.split('-').reverse().join('/')})`;
+      }
 
-    const tableData = data.map(r => [
-      r.date,
-      r.time,
-      r.title,
-      r.description || '-',
-      r.completed ? 'Sim' : 'Não'
-    ]);
+      doc.setFontSize(18);
+      doc.setTextColor(0, 71, 141); // Primary color theme
+      doc.text('THE PRECISION', 14, 22);
+      
+      doc.setFontSize(14);
+      doc.setTextColor(50);
+      doc.text(title, 14, 32);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 40);
 
-    autoTable(doc, {
-      startY: 40,
-      head: [['Data', 'Hora', 'Título', 'Descrição', 'Concluído']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [103, 80, 164] }, // Primary color
-    });
+      const tableData = data.map(r => [
+        r.date.split('-').reverse().join('/'),
+        r.time,
+        r.title,
+        r.description || '-',
+        r.completed ? 'Concluido' : 'Pendente'
+      ]);
 
-    doc.save(`lembretes_${type}_${new Date().getTime()}.pdf`);
-    */
-    console.log('PDF Export disabled for debugging');
+      autoTable(doc, {
+        startY: 50,
+        head: [['Data', 'Hora', 'Titulo', 'Descricao', 'Status']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { 
+          fillColor: [0, 71, 141], 
+          textColor: [255, 255, 255],
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          fontSize: 9
+        },
+        alternateRowStyles: {
+          fillColor: [240, 247, 255]
+        },
+        margin: { top: 50 }
+      });
+
+      doc.save(`the_precision_${type}_${new Date().toISOString().split('T')[0]}.pdf`);
+      setSuccessMessage('Relatorio PDF gerado com sucesso.');
+    } catch (error: any) {
+      console.error('Erro ao gerar PDF:', error.message || error);
+      setErrorMessage('Erro ao gerar o arquivo PDF.');
+    }
   };
 
-  const currentReminders = activeTab === 'past' ? pastReminders : futureReminders;
+  const currentReminders = activeTab === 'past' 
+    ? pastReminders 
+    : activeTab === 'future' 
+      ? futureReminders 
+      : customReminders;
 
   return (
     <>
@@ -139,6 +210,32 @@ export default function HistoryPage() {
           <h2 className="text-4xl font-extrabold tracking-tight text-on-surface">Histórico & Agenda</h2>
           <p className="text-on-surface-variant opacity-70">Visualize e exporte seus dados temporais com precisão editorial.</p>
         </div>
+
+        {/* Feedback Notifications */}
+        <AnimatePresence>
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -20 }}
+              className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] bg-green-50 text-green-600 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border border-green-100 editorial-shadow min-w-[300px]"
+            >
+              <CheckCircle size={18} />
+              {successMessage}
+            </motion.div>
+          )}
+          {errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -20 }}
+              className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border border-red-100 editorial-shadow min-w-[300px]"
+            >
+              <AlertCircle size={18} />
+              {errorMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tabs */}
         <div className="flex p-1 bg-surface-container-low rounded-2xl editorial-shadow">
@@ -164,7 +261,51 @@ export default function HistoryPage() {
             <History size={16} />
             Passados ({pastReminders.length})
           </button>
+          <button
+            onClick={() => setActiveTab('custom')}
+            className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'custom' 
+                ? 'bg-primary text-on-primary shadow-lg' 
+                : 'text-outline hover:text-on-surface'
+            }`}
+          >
+            <Filter size={16} />
+            Personalizado
+          </button>
         </div>
+
+        {/* Custom Filter Controls */}
+        <AnimatePresence>
+          {activeTab === 'custom' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-surface-container-low p-6 rounded-3xl editorial-shadow border border-primary/10 overflow-hidden"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-primary/60 ml-1">Data Inicial</label>
+                  <input 
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border border-slate-100 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-primary/60 ml-1">Data Final</label>
+                  <input 
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border border-slate-100 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Export Button */}
         <button
@@ -172,8 +313,8 @@ export default function HistoryPage() {
           disabled={currentReminders.length === 0}
           className="w-full py-4 bg-surface-container-high rounded-2xl flex items-center justify-center gap-3 font-bold text-primary hover:bg-primary/5 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border border-primary/10"
         >
-          <Download size={20} />
-          Exportar {activeTab === 'past' ? 'Passados' : 'Futuros'} em PDF
+          <DownloadCloud size={20} />
+          Exportar {activeTab === 'past' ? 'Passados' : activeTab === 'future' ? 'Futuros' : 'Periodo Selecionado'} em PDF
         </button>
 
         {/* List */}

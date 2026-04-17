@@ -2,15 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ChevronRight, MoreVertical, Lock, BarChart3, Clock, Loader2, Trash2, CheckCircle, Edit } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreVertical, Lock, Clock, Loader2, Trash2, CheckCircle, Edit, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/use-auth';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import Link from 'next/link';
 
+import { useRouter } from 'next/navigation';
+
 export default function Schedule() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [reminders, setReminders] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth?message=login_required');
+    }
+  }, [user, authLoading, router]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -65,10 +74,21 @@ export default function Schedule() {
   const completedCount = selectedDayReminders.filter(r => r.completed).length;
   const totalCount = selectedDayReminders.length;
   
-  const focusScore = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-  
   // Free Time Calculation (Simplified: 16 hours awake - 1.5h per task)
   const estimatedFreeTime = Math.max(0, 16 - (totalCount * 1.5)).toFixed(1);
+
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+        setErrorMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, errorMessage]);
 
   useEffect(() => {
     if (!user) {
@@ -117,8 +137,8 @@ export default function Schedule() {
         .update({ completed: !currentStatus })
         .eq('id', reminderId);
       if (error) throw error;
-    } catch (error) {
-      console.error('Erro ao atualizar lembrete:', error);
+    } catch (error: any) {
+      console.error('Erro ao atualizar lembrete:', error.message || error);
     }
   };
 
@@ -135,10 +155,14 @@ export default function Schedule() {
         .delete()
         .eq('id', deleteId);
       if (error) throw error;
-    } catch (error) {
-      console.error('Erro ao excluir lembrete:', error);
+      setReminders(prev => prev.filter(r => r.id !== deleteId));
+      setSuccessMessage('Exclusão executada com sucesso.');
+    } catch (error: any) {
+      console.error('Erro ao excluir lembrete:', error.message || error);
+      setErrorMessage(error.message || 'Erro ao excluir lembrete.');
     } finally {
       setDeleteId(null);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -152,6 +176,33 @@ export default function Schedule() {
         message="Esta ação é permanente. O lembrete será removido de sua agenda e histórico."
         confirmText="Excluir"
       />
+      
+      {/* Feedback Notifications */}
+      <AnimatePresence>
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] bg-green-50 text-green-600 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border border-green-100 editorial-shadow min-w-[300px]"
+          >
+            <CheckCircle size={18} />
+            {successMessage}
+          </motion.div>
+        )}
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold border border-red-100 editorial-shadow min-w-[300px]"
+          >
+            <AlertCircle size={18} />
+            {errorMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Calendar Section */}
       <section className="space-y-6">
         <div className="flex justify-between items-end">
@@ -326,20 +377,20 @@ export default function Schedule() {
       </section>
 
       {/* Stats Bento Grid */}
-      <section className="mt-12 grid grid-cols-2 gap-4">
-        <div className="bg-primary text-on-primary p-6 rounded-[2.5rem] flex flex-col justify-between aspect-square editorial-shadow">
-          <BarChart3 size={40} />
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Pontuação de Foco</p>
-            <h5 className="text-4xl font-black">{focusScore}%</h5>
+      <section className="mt-12">
+        <div className="bg-surface-container-high p-8 rounded-[2.5rem] flex items-center justify-between editorial-shadow">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+              <Clock size={32} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">Tempo Livre Estimado</p>
+              <h5 className="text-4xl font-black text-on-surface">{estimatedFreeTime}h</h5>
+            </div>
           </div>
-        </div>
-        <div className="bg-surface-container-high p-6 rounded-[2.5rem] flex flex-col justify-between aspect-square editorial-shadow">
-          <Clock size={40} className="text-primary" />
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-secondary">Tempo Livre Estimado</p>
-            <h5 className="text-4xl font-black text-on-surface">{estimatedFreeTime}h</h5>
-          </div>
+          <p className="text-xs text-on-surface-variant max-w-[150px] text-right font-medium opacity-60">
+            Baseado em uma jornada de 16h descontando 1.5h por tarefa agendada.
+          </p>
         </div>
       </section>
     </>

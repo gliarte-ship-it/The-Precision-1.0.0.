@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "The Precision",
   description: "Editorial Time Management & Reminders",
   manifest: "/manifest.json",
+  icons: {
+    icon: "https://picsum.photos/seed/watch-precision/192/192",
+    apple: "https://picsum.photos/seed/chronograph-editorial/512/512",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

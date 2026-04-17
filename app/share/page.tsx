@@ -11,8 +11,17 @@ import DatePicker from 'react-datepicker';
 import { format, parse, isAfter, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+import { useRouter } from 'next/navigation';
+
 export default function SharePage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth?message=login_required');
+    }
+  }, [user, authLoading, router]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -48,8 +57,8 @@ export default function SharePage() {
       
       const url = `${baseUrl}/view?${params.toString()}`;
       setShareUrl(url);
-    } catch (error) {
-      console.error('Erro ao gerar link:', error);
+    } catch (error: any) {
+      console.error('Erro ao gerar link:', error.message || error);
     } finally {
       setLoading(false);
     }

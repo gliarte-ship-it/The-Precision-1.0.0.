@@ -36,13 +36,13 @@ function ViewContent() {
           .order('time', { ascending: true });
 
         if (error) {
-          console.error('Erro Supabase:', error);
+          console.error('Erro Supabase:', error.message || error);
           setErrorStatus(error.message);
         } else if (data) {
           setReminders(data);
         }
       } catch (err: any) {
-        console.error('Erro Inesperado:', err);
+        console.error('Erro Inesperado:', err.message || err);
         setErrorStatus(err.message || 'Erro ao conectar ao banco de dados.');
       } finally {
         setLoading(false);

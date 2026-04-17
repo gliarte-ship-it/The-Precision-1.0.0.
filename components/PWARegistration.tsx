@@ -9,10 +9,10 @@ export default function PWARegistration() {
         navigator.serviceWorker
           .register('/sw.js')
           .then((registration) => {
-            console.log('SW registered: ', registration);
+            console.log('SW registered successfully');
           })
-          .catch((registrationError) => {
-            console.log('SW registration failed: ', registrationError);
+          .catch((registrationError: any) => {
+            console.log('SW registration failed: ', registrationError.message || registrationError);
           });
       });
     }

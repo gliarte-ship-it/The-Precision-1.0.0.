@@ -16,6 +16,7 @@ interface Reminder {
 }
 
 interface ReminderContextType {
+  reminders: Reminder[];
   activeAlert: Reminder | null;
   dismissAlert: () => void;
 }
@@ -118,7 +119,7 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
         setTriggeredAlerts(prev => new Set(prev).add(reminder.id));
         
         if (audioRef.current) {
-          audioRef.current.play().catch(e => console.log('Autoplay blocked or audio error:', e));
+          audioRef.current.play().catch(e => console.log('Autoplay blocked or audio error:', e.message || e));
         }
       }
     });
@@ -138,7 +139,7 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ReminderContext.Provider value={{ activeAlert, dismissAlert }}>
+    <ReminderContext.Provider value={{ reminders, activeAlert, dismissAlert }}>
       {children}
     </ReminderContext.Provider>
   );

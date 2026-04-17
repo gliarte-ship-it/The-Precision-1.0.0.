@@ -22,6 +22,14 @@ export default function AuthPage() {
   });
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get('message');
+    if (msg === 'login_required') {
+      setError('Acesso restrito: Por favor, faça login para criar lembretes.');
+    }
+  }, []);
+
+  useEffect(() => {
     if (user) {
       router.push('/');
     }

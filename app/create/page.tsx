@@ -15,7 +15,7 @@ registerLocale('pt-BR', ptBR);
 
 export default function CreateReminder() {
   const router = useRouter();
-  const { user, login } = useAuth();
+  const { user, login, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -53,6 +53,12 @@ export default function CreateReminder() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth?message=login_required');
+    }
+  }, [user, authLoading, router]);
+
   const fetchReminder = async (id: string) => {
     setFetching(true);
     try {
@@ -77,8 +83,8 @@ export default function CreateReminder() {
           setCustomAlert(alertTime);
         }
       }
-    } catch (error) {
-      console.error('Erro ao buscar lembrete:', error);
+    } catch (error: any) {
+      console.error('Erro ao buscar lembrete:', error.message || error);
     } finally {
       setFetching(false);
     }
@@ -124,9 +130,9 @@ export default function CreateReminder() {
         router.push('/');
       }, 2000);
     } catch (error: any) {
-      console.error('Erro detalhado ao salvar lembrete:', error);
-      // Improved error message to avoid empty object display
-      const errorMessage = error.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
+      console.error('Erro detalhado ao salvar lembrete:', error.message || error);
+      // Improved error message to avoid circular structure errors
+      const errorMessage = error.message || String(error);
       console.error(`Erro ao salvar lembrete: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -145,31 +151,15 @@ export default function CreateReminder() {
   return (
     <>
       <AnimatePresence>
-        {!user && (
+        {authLoading && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-surface-container-highest/80 backdrop-blur-md flex items-center justify-center p-6"
           >
-            <div className="bg-surface-container-low p-10 rounded-[40px] editorial-shadow max-w-md w-full text-center space-y-8">
-              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                <Lock className="text-primary" size={40} />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-black tracking-tighter text-on-surface">Acesso Restrito</h2>
-                <p className="text-on-surface-variant">Para garantir a precisão dos seus dados, você precisa estar autenticado.</p>
-              </div>
-              <button 
-                onClick={() => login()}
-                className="w-full py-5 bg-primary text-on-primary font-bold rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3"
-              >
-                <Save size={20} />
-                Entrar com Google
-              </button>
-              <Link href="/" className="block text-sm font-bold text-outline hover:text-primary transition-colors">
-                Voltar ao Início
-              </Link>
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="animate-spin text-primary" size={48} />
+              <p className="text-on-surface-variant font-bold uppercase tracking-widest text-xs">Verificando Cronografia...</p>
             </div>
           </motion.div>
         )}

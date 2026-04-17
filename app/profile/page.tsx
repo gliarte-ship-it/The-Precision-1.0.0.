@@ -11,7 +11,13 @@ import Image from 'next/image';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth?message=login_required');
+    }
+  }, [user, authLoading, router]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +77,7 @@ export default function ProfilePage() {
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
       
     } catch (err: any) {
-      console.error('Erro no upload:', err);
+      console.error('Erro no upload:', err.message || err);
       setError(err.message || 'Erro ao fazer upload da imagem.');
     } finally {
       setUploading(false);
@@ -95,7 +101,7 @@ export default function ProfilePage() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error: any) {
-      console.error('Erro ao atualizar perfil:', error);
+      console.error('Erro ao atualizar perfil:', error.message || error);
     } finally {
       setLoading(false);
     }
